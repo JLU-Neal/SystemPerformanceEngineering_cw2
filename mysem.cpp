@@ -27,8 +27,7 @@ void mysem::acquire()
             expected = 1;
         }
     }
-    
-    // this->counter.fetch_sub(1); 
+
 }
 
 void mysem::release()
