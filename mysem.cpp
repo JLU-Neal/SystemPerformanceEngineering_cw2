@@ -33,7 +33,6 @@ void mysem::acquire()
     {
         expected = 1;
     }
-    // cout<<"expected"<<expected<<endl;
     //use cas to assign the value
     while (!counter.compare_exchange_strong(expected, expected-1, memory_order_seq_cst))
     {
@@ -41,16 +40,15 @@ void mysem::acquire()
         {
             expected = 1;
         }
-        
+        //wait while the lock is occupied
         long s = futex(counter_ptr, FUTEX_WAIT, 0, NULL, NULL, 0);
-        cout<<"thread wake up"<<endl;
+        
     }
 
 }
 
 void mysem::release()
 {
-    // cout<<"Current val of counter:"<<this->counter<<endl;
     uint32_t* counter_ptr = reinterpret_cast<uint32_t*>(&this->counter);
     this->counter.fetch_add(1);
     long s = futex(counter_ptr, FUTEX_WAKE, 1, NULL, NULL, 0);
@@ -59,9 +57,8 @@ void mysem::release()
 
 void random_work()
 {
-    // cout<<endl;
-    for (volatile int i = 0; i < 1000000; i++);
-    // cout<<"Some random works"<<endl;
+    //use volatile to make sure the variable would not be optimized by the compiler
+    for (volatile int i = 0; i < 10000; i++);
 }
 
 
@@ -69,12 +66,16 @@ int main(int argc, char**argv)
 {
     mysem s(1);
     vector<thread> vector_of_thread;
-    for(int i = 0; i < 5; i++){
+    for(int i = 0; i < 100; i++){
         
         std::thread t_temp([&](){
         s.acquire();
-        // std::cout << i; random_work(); std::cout << i<<endl;
-        std::cout << "From Thread ID : "<<std::this_thread::get_id() << "\n"<<endl;
+        int cur = i;
+        // std::cout << cur; random_work(); std::cout << cur<<endl;
+        std::cout << "Start from Thread ID : "<<std::this_thread::get_id() << "\n"<<endl;
+        random_work();
+        std::cout << "End from Thread ID :   "<<std::this_thread::get_id() << "\n"<<endl;
+
         s.release();
         });
         vector_of_thread.push_back(move(t_temp));
