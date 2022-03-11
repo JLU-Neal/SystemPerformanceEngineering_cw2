@@ -34,14 +34,21 @@ void mysem::acquire()
         expected = 1;
     }
     //use cas to assign the value
+    int count = 0;
     while (!counter.compare_exchange_strong(expected, expected-1, memory_order_seq_cst))
     {
+        count++;
         if(expected<=0)
         {
             expected = 1;
         }
-        //wait while the lock is occupied
-        long s = futex(counter_ptr, FUTEX_WAIT, 0, NULL, NULL, 0);
+        //wait while the lock is occupied after tring 100 times
+        if(count>=100)
+        {
+            long s = futex(counter_ptr, FUTEX_WAIT, 0, NULL, NULL, 0);
+            count = 0;
+        }
+        
         
     }
 
