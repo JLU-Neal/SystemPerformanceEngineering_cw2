@@ -57,8 +57,12 @@ void mysem::acquire()
 void mysem::release()
 {
     uint32_t* counter_ptr = reinterpret_cast<uint32_t*>(&this->counter);
-    this->counter.fetch_add(1);
-    long s = futex(counter_ptr, FUTEX_WAKE, 1, NULL, NULL, 0);
+    uint32_t expected = this->counter.load();
+    while(!this->counter.compare_exchange_strong(expected, expected+1));
+    if(expected==0)
+    {        
+        long s = futex(counter_ptr, FUTEX_WAKE, 1, NULL, NULL, 0);
+    }   
 }
 
 
